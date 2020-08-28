@@ -1,5 +1,6 @@
 from scipy.misc import logsumexp
 import numpy as np
+import math
 
 from .basemodel import BaseModel
 from .maxentutils import evaluate_feature_matrix
@@ -50,7 +51,7 @@ class Model(BaseModel):
     may be less robust than the gradient-based algorithms.
     """
     def __init__(self, features, samplespace, vectorized=True, format='csc_matrix', verbose=False):
-        super(Model, self).__init__()
+        super(Model, self).__init__(prior_log_probs=None)
         self.samplespace = samplespace
         self.max_output_lines = 20
         self.verbose = verbose
@@ -155,8 +156,8 @@ class Model(BaseModel):
         log_p_dot = self.F.T.dot(self.params)
 
         # Are we minimizing KL divergence?
-        if self.priorlogprobs is not None:
-            log_p_dot += self.priorlogprobs
+        if self.prior_log_probs is not None:
+            log_p_dot += self.prior_log_probs
 
         self.logZ = logsumexp(log_p_dot)
         return self.logZ
@@ -193,8 +194,8 @@ class Model(BaseModel):
         log_p_dot = self.F.T.dot(self.params)
 
         # Do we have a prior distribution p_0?
-        if self.priorlogprobs is not None:
-            log_p_dot += self.priorlogprobs
+        if self.prior_log_probs is not None:
+            log_p_dot += self.prior_log_probs
         if not hasattr(self, 'logZ'):
             # Compute the norm constant (quickly!)
             self.logZ = logsumexp(log_p_dot)
@@ -243,7 +244,7 @@ class Model(BaseModel):
 
         # Do we have a prior distribution p_0?
         priorlogpmf = None
-        if self.priorlogprobs is not None:
+        if self.prior_log_probs is not None:
             try:
                 priorlogpmf = self.priorlogpmf
             except AttributeError:
